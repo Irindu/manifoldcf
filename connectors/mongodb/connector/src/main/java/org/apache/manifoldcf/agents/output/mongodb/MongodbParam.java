@@ -41,7 +41,7 @@ public class MongodbParam extends HashMap<ParameterEnum, String> {
     final public Map<String, String> buildMap()
     {
         Map<String, String> rval = new HashMap<String, String>();
-        for (Map.Entry<ParameterEnum, String> entry : this.entrySet())
+        for (Entry<ParameterEnum, String> entry : this.entrySet())
             rval.put(entry.getKey().name(), entry.getValue());
         return rval;
     }
