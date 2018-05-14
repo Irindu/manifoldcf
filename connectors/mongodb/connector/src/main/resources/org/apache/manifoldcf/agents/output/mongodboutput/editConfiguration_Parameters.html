@@ -18,27 +18,27 @@
 #if($TABNAME == $ResourceBundle.getString('MongodbConnector.Parameters'))
 
 <table class="displaytable">
-  <tr>
-    <td class="description">
-      <nobr>$Encoder.bodyEscape($ResourceBundle.getString('MongodbConnector.ServerLocation'))</nobr>
-    </td>
-    <td class="value"><input name="serverlocation" type="text"
-      value="$Encoder.attributeEscape($SERVERLOCATION)" size="40" />
-    </td>
-  </tr>
-  <tr>
-    <td class="description"><nobr>$Encoder.bodyEscape($ResourceBundle.getString('MongodbConnector.PortNumberColon'))</nobr></td>
-    <td class="value"><input name="portnumber" type="text" value="$Encoder.attributeEscape($PORTNUMBER)"
-      size="24" /></td>
-  </tr>
-  <tr>
-    <td class="description"><nobr>$Encoder.bodyEscape($ResourceBundle.getString('MongodbConnector.UserNameColon'))</nobr></td>
-    <td class="value"><input name="username" type="text" value="$Encoder.attributeEscape($USERNAME)"
-      size="24" /></td>
-  </tr>
+    <tr>
+        <td class="description">
+            <nobr>$Encoder.bodyEscape($ResourceBundle.getString('MongodbConnector.host'))</nobr>
+        </td>
+        <td class="value"><input name="host" type="text"
+                                 value="$Encoder.attributeEscape($HOST)" size="40" />
+        </td>
+    </tr>
+    <tr>
+        <td class="description"><nobr>$Encoder.bodyEscape($ResourceBundle.getString('MongodbConnector.PortColon'))</nobr></td>
+        <td class="value"><input name="port" type="text" value="$Encoder.attributeEscape($PORT)"
+                                 size="24" /></td>
+    </tr>
+    <tr>
+        <td class="description"><nobr>$Encoder.bodyEscape($ResourceBundle.getString('MongodbConnector.UserNameColon'))</nobr></td>
+        <td class="value"><input name="username" type="text" value="$Encoder.attributeEscape($USERNAME)"
+                                 size="24" /></td>
+    </tr>
     <tr>
         <td class="description"><nobr>$Encoder.bodyEscape($ResourceBundle.getString('MongodbConnector.PasswordColon'))</nobr></td>
-        <td class="value"><input name="password" type="text" value="$Encoder.attributeEscape($PASSWORD)"
+        <td class="value"><input name="password" type="password" value="$Encoder.attributeEscape($PASSWORD)"
                                  size="24" /></td>
     </tr>
     <tr>
@@ -51,23 +51,18 @@
         <td class="value"><input name="collection" type="text" value="$Encoder.attributeEscape($COLLECTION)"
                                  size="24" /></td>
     </tr>
-    <tr>
-        <td class="description"><nobr>$Encoder.bodyEscape($ResourceBundle.getString('MongodbConnector.DocumentColon'))</nobr></td>
-        <td class="value"><input name="document" type="text" value="$Encoder.attributeEscape($DOCUMENT)"
-                                 size="24" /></td>
-    </tr>
+
 
 </table>
 
 #else
 
-<input type="hidden" name="serverlocation" value="$Encoder.attributeEscape($SERVERLOCATION)" />
-<input type="hidden" name="portnumber" value="$Encoder.attributeEscape($PORTNUMBER)" />
+<input type="hidden" name="host" value="$Encoder.attributeEscape($HOST)" />
+<input type="hidden" name="port" value="$Encoder.attributeEscape($PORT)" />
 <input type="hidden" name="username" value="$Encoder.attributeEscape($USERNAME)" />
 <input type="hidden" name="password" value="$Encoder.attributeEscape($PASSWORD)" />
 <input type="hidden" name="database" value="$Encoder.attributeEscape($DATABASE)" />
 <input type="hidden" name="collection" value="$Encoder.attributeEscape($COLLECTION)" />
-<input type="hidden" name="document" value="$Encoder.attributeEscape($DOCUMENT)" />
 
 #end
 

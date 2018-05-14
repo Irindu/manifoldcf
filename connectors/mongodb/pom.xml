@@ -1,30 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>org.apache.manifoldcf</groupId>
         <artifactId>mcf-connectors</artifactId>
-        <version>2.10-SNAPSHOT</version>
+        <version>2.10</version>
     </parent>
-
     <modelVersion>4.0.0</modelVersion>
 
-    <repositories>
-        <repository>
-            <id>sonatype</id>
-            <url>https://oss.sonatype.org/content/repositories/releases</url>
-        </repository>
-    </repositories>
-
-    <artifactId>mcf-mongodb-connector</artifactId>
-    <name>ManifoldCF - Connectors - Mongodb</name>
-    <version>1.0-SNAPSHOT</version>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    </properties>
 
     <developers>
         <developer>
             <name>Irindu Nugawela</name>
-            <url/>
         </developer>
         <developer>
             <name>Piergiorgio Lucidi</name>
@@ -34,11 +26,41 @@
         </developer>
     </developers>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <mcf.version>2.10-SNAPSHOT</mcf.version>
-    </properties>
+    <artifactId>mcf-mongodb-connector</artifactId>
+    <name>ManifoldCF - Connectors - Mongodb</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>mcf-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>mcf-connector-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>mcf-agents</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>mcf-pull-agent</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>mcf-ui-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongo-java-driver</artifactId>
+            <version>2.11.3</version>
+        </dependency>
+    </dependencies>
 
     <build>
         <defaultGoal>integration-test</defaultGoal>
@@ -64,122 +86,33 @@
                 <directory>${basedir}/connector/src/test/resources</directory>
             </testResource>
         </testResources>
+
         <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>native2ascii-maven-plugin</artifactId>
-                <version>1.0-beta-1</version>
-                <configuration>
-                    <workDir>target/classes</workDir>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>native2ascii-utf8</id>
-                        <goals>
-                            <goal>native2ascii</goal>
-                        </goals>
-                        <configuration>
-                            <encoding>UTF8</encoding>
-                            <includes>
-                                <include>**/*.properties</include>
-                            </includes>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
 
-            <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-war</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>target/dependency</outputDirectory>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>${project.groupId}</groupId>
-                                    <artifactId>mcf-api-service</artifactId>
-                                    <version>${mcf.version}</version>
-                                    <type>war</type>
-                                    <overWrite>false</overWrite>
-                                    <destFileName>mcf-api-service.war</destFileName>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>${project.groupId}</groupId>
-                                    <artifactId>mcf-authority-service</artifactId>
-                                    <version>${mcf.version}</version>
-                                    <type>war</type>
-                                    <overWrite>false</overWrite>
-                                    <destFileName>mcf-authority-service.war</destFileName>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>${project.groupId}</groupId>
-                                    <artifactId>mcf-crawler-ui</artifactId>
-                                    <version>${mcf.version}</version>
-                                    <type>war</type>
-                                    <overWrite>false</overWrite>
-                                    <destFileName>mcf-crawler-ui.war</destFileName>
-                                </artifactItem>
-                            </artifactItems>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+        <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>native2ascii-maven-plugin</artifactId>
+            <version>1.0-beta-1</version>
+            <configuration>
+                <workDir>target/classes</workDir>
+            </configuration>
+            <executions>
+                <execution>
+                    <id>native2ascii-utf8</id>
+                    <goals>
+                        <goal>native2ascii</goal>
+                    </goals>
+                    <configuration>
+                        <encoding>UTF8</encoding>
+                        <includes>
+                            <include>**/*.properties</include>
+                        </includes>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>
         </plugins>
+
     </build>
-
-    <dependencies>
-        <!-- Main build dependencies -->
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>mcf-core</artifactId>
-            <version>${mcf.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>mcf-connector-common</artifactId>
-            <version>${mcf.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>mcf-agents</artifactId>
-            <version>${mcf.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>mcf-pull-agent</artifactId>
-            <version>${mcf.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>mcf-ui-core</artifactId>
-            <version>${mcf.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>${httpcomponent.httpclient.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-logging</groupId>
-            <artifactId>commons-logging</artifactId>
-            <version>${commons-logging.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-codec</groupId>
-            <artifactId>commons-codec</artifactId>
-            <version>${commons-codec.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mongodb</groupId>
-            <artifactId>mongo-java-driver</artifactId>
-            <version>2.10.1</version>
-        </dependency>
-    </dependencies>
-
 
 </project>
