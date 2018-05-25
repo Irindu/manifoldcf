@@ -1,6 +1,7 @@
 package org.apache.manifoldcf.agents.output.mongodboutput;
 
 import com.mongodb.DB;
+import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoException;
 import org.apache.commons.lang.StringUtils;
@@ -43,7 +44,7 @@ public class MongodbOutputConnector extends BaseOutputConnector {
 
     private MongoClient client = null;
     private DB mongoDatabase = null;
-
+    private DBCollection mongoCollection = null;
     protected String username = null;
     protected String password = null;
     protected String host = null;
@@ -131,7 +132,7 @@ public class MongodbOutputConnector extends BaseOutputConnector {
      */
     @Override
     public boolean isConnected() {
-        return client != null;
+        return (client != null && mongoDatabase.isAuthenticated());
     }
 
     /**
@@ -287,7 +288,7 @@ public class MongodbOutputConnector extends BaseOutputConnector {
             parameters.setParameter(MongodbOutputConfig.HOST_PARAM, host);
 
         String port = variableContext.getParameter(MongodbOutputConfig.PORT_PARAM);
-        if (port != null) {
+        if (port != null && !StringUtils.isEmpty(port)) {
             try {
                 Integer.parseInt(port);
                 parameters.setParameter(MongodbOutputConfig.PORT_PARAM, port);
@@ -357,18 +358,18 @@ public class MongodbOutputConnector extends BaseOutputConnector {
                     }
                 }
 
-                if (!StringUtils.isEmpty(username) && !StringUtils.isEmpty(password)) {
-                    boolean auth = mongoDatabase.authenticate(username, password.toCharArray());
-                    if (!auth) {
-                        Logging.connectors.warn("Mongodb:Authentication Error! Given database username and password doesn't match.");
-                        throw new ManifoldCFException("Mongodb: Given database username and password doesn't match.");
-                    } else {
-                        if (Logging.connectors.isDebugEnabled()) {
-                            Logging.connectors.debug("Mongodb: Username = '" + username + "'");
-                            Logging.connectors.debug("Mongodb: Password exists");
-                        }
+                //making authentication mandatory, it is the only way to check if mongod is running in mongod2.x versions
+                boolean auth = mongoDatabase.authenticate(username, password.toCharArray());
+                if (!auth) {
+                    Logging.connectors.warn("Mongodb:Authentication Error! Given database username and password doesn't match.");
+                    throw new ManifoldCFException("Mongodb: Given database username and password doesn't match.");
+                } else {
+                    if (Logging.connectors.isDebugEnabled()) {
+                        Logging.connectors.debug("Mongodb: Username = '" + username + "'");
+                        Logging.connectors.debug("Mongodb: Password exists");
                     }
                 }
+
             } catch (Throwable e) {
                 this.exception = e;
             }
@@ -389,7 +390,11 @@ public class MongodbOutputConnector extends BaseOutputConnector {
 
         public void run() {
             try {
-                client.getAddress();
+                getSession();
+                if (!mongoDatabase.isAuthenticated()) {
+                    throw new ManifoldCFException("Mongodb: not authenticated on the database!");
+                }
+
             } catch (Throwable e) {
                 Logging.connectors.warn("Mongodb: Error checking repository: " + e.getMessage(), e);
                 this.exception = e;
@@ -510,45 +515,47 @@ public class MongodbOutputConnector extends BaseOutputConnector {
      */
     protected void getSession() throws ManifoldCFException, ServiceInterruption {
 
-        if (client == null) {
-            // Check for parameter validity
+        // Check for parameter validity
 
-            if (StringUtils.isEmpty(database))
-                throw new ManifoldCFException("Parameter " + MongodbOutputConfig.DATABASE_PARAM + " required but not set");
+        if (StringUtils.isEmpty(database))
+            throw new ManifoldCFException("Parameter " + MongodbOutputConfig.DATABASE_PARAM + " required but not set");
 
-            if (StringUtils.isEmpty(collection))
-                throw new ManifoldCFException("Parameter " + MongodbOutputConfig.COLLECTION_PARAM + " required but not set");
+        if (StringUtils.isEmpty(collection))
+            throw new ManifoldCFException("Parameter " + MongodbOutputConfig.COLLECTION_PARAM + " required but not set");
 
 
-            long currentTime;
-            GetSessionThread t = new GetSessionThread();
-            try {
-                t.start();
-                t.join();
-                Throwable thr = t.getException();
-                if (thr != null) {
-                    if (thr instanceof ManifoldCFException)
-                        throw new ManifoldCFException("Mongodb: Error during getting a new session: " + thr.getMessage(), thr);
-                    else if (thr instanceof RemoteException)
-                        throw (RemoteException) thr;
-                    else
-                        throw (Error) thr;
-                }
-            } catch (InterruptedException e) {
-                t.interrupt();
-                throw new ManifoldCFException("Interrupted: " + e.getMessage(), e, ManifoldCFException.INTERRUPTED);
-            } catch (RemoteException e) {
-                Throwable e2 = e.getCause();
-                if (e2 instanceof InterruptedException || e2 instanceof InterruptedIOException)
-                    throw new ManifoldCFException(e2.getMessage(), e2, ManifoldCFException.INTERRUPTED);
-                // Treat this as a transient problem
-                Logging.connectors.warn("Mogodb: Transient remote exception creating session: " + e.getMessage(), e);
-                currentTime = System.currentTimeMillis();
-                throw new ServiceInterruption(e.getMessage(), currentTime + 60000L);
+        long currentTime;
+        GetSessionThread t = new GetSessionThread();
+        try {
+            t.start();
+            t.join();
+            Throwable thr = t.getException();
+            if (thr != null) {
+                if (thr instanceof ManifoldCFException)
+                    throw new ManifoldCFException("Mongodb: Error during getting a new session: " + thr.getMessage(), thr);
+                else if (thr instanceof RemoteException)
+                    throw (RemoteException) thr;
+                else if (thr instanceof MongoException)
+                    throw new ManifoldCFException("Mongodb: Error during getting a new session: " + thr.getMessage(), thr);
+                else if (thr instanceof java.net.ConnectException)
+                    throw new ManifoldCFException("Mongodb: Error Connecting Mongod is mongod running? : " + thr.getMessage(), thr);
+                else
+                    throw (Error) thr;
             }
-
-            lastSessionFetch = System.currentTimeMillis();
+        } catch (InterruptedException e) {
+            t.interrupt();
+            throw new ManifoldCFException("Interrupted: " + e.getMessage(), e, ManifoldCFException.INTERRUPTED);
+        } catch (RemoteException e) {
+            Throwable e2 = e.getCause();
+            if (e2 instanceof InterruptedException || e2 instanceof InterruptedIOException)
+                throw new ManifoldCFException(e2.getMessage(), e2, ManifoldCFException.INTERRUPTED);
+            // Treat this as a transient problem
+            Logging.connectors.warn("Mogodb: Transient remote exception creating session: " + e.getMessage(), e);
+            currentTime = System.currentTimeMillis();
+            throw new ServiceInterruption(e.getMessage(), currentTime + 60000L);
         }
+
+        lastSessionFetch = System.currentTimeMillis();
     }
 
     /**
@@ -604,6 +611,8 @@ public class MongodbOutputConnector extends BaseOutputConnector {
                         throw (RemoteException) thr;
                     else if (thr instanceof MongoException)
                         throw new ManifoldCFException("Mongodb: Error during checking connection: " + thr.getMessage(), thr);
+                    else if (thr instanceof ManifoldCFException)
+                        throw new ManifoldCFException(thr.getMessage(), thr);
                     else
                         throw (Error) thr;
                 }
