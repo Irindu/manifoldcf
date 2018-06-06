@@ -1,9 +1,6 @@
 package org.apache.manifoldcf.agents.output.mongodboutput;
 
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
-import com.mongodb.MongoClient;
-import com.mongodb.MongoException;
+import com.mongodb.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.manifoldcf.agents.interfaces.ServiceInterruption;
 import org.apache.manifoldcf.agents.output.BaseOutputConnector;
@@ -12,6 +9,7 @@ import org.apache.manifoldcf.crawler.system.Logging;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.net.ConnectException;
 import java.net.UnknownHostException;
 import java.rmi.RemoteException;
 import java.util.HashMap;
@@ -23,47 +21,39 @@ public class MongodbOutputConnector extends BaseOutputConnector {
 
     // Tab name properties
 
-    private static final String MONGODB_TAB_PARAMETERS = "MongodbConnector.Parameters";
+    protected static final long timeToRelease = 300000L;
 
     // Template names
-
+    /**
+     * Save activity
+     */
+    protected final static String ACTIVITY_INJECTION = "Injection";
+    /**
+     * Delete activity
+     */
+    protected final static String ACTIVITY_DELETE = "Delete";
+    private static final String MONGODB_TAB_PARAMETERS = "MongodbConnector.Parameters";
     /**
      * Forward to the javascript to check the configuration parameters
      */
     private static final String EDIT_CONFIG_HEADER_FORWARD = "editConfiguration.js";
-
     /**
      * Server tab template
      */
     private static final String EDIT_CONFIG_FORWARD_SERVER = "editConfiguration_Parameters.html";
-
     /**
      * Forward to the HTML template to view the configuration parameters
      */
     private static final String VIEW_CONFIG_FORWARD = "viewConfiguration.html";
-
-    private MongoClient client = null;
-    private DB mongoDatabase = null;
-    private DBCollection mongoCollection = null;
     protected String username = null;
     protected String password = null;
     protected String host = null;
     protected String port = null;
     protected String database = null;
     protected String collection = null;
-
-    protected static final long timeToRelease = 300000L;
     protected long lastSessionFetch = -1L;
-
-    /**
-     * Save activity
-     */
-    protected final static String ACTIVITY_INJECTION = "Injection";
-
-    /**
-     * Delete activity
-     */
-    protected final static String ACTIVITY_DELETE = "Delete";
+    private MongoClient client = null;
+    private DB mongoDatabase = null;
 
 
     /**
@@ -71,6 +61,58 @@ public class MongodbOutputConnector extends BaseOutputConnector {
      */
     public MongodbOutputConnector() {
         super();
+    }
+
+    /**
+     * Read the content of a resource, replace the variable ${PARAMNAME} with the
+     * value and copy it to the out.
+     *
+     * @param resName
+     * @param out
+     * @throws ManifoldCFException
+     */
+    private static void outputResource(String resName, IHTTPOutput out, Locale locale, Map<String, String> paramMap)
+            throws ManifoldCFException {
+        Messages.outputResourceWithVelocity(out, locale, resName, paramMap, true);
+    }
+
+    /**
+     * Fill in a Server tab configuration parameter map for calling a Velocity
+     * template.
+     *
+     * @param newMap     is the map to fill in
+     * @param parameters is the current set of configuration parameters
+     */
+    private static void fillInServerConfigurationMap(Map<String, String> newMap, IPasswordMapperActivity mapper,
+                                                     ConfigParams parameters) {
+        String username = parameters.getParameter(MongodbOutputConfig.USERNAME_PARAM);
+        String password = parameters.getParameter(MongodbOutputConfig.PASSWORD_PARAM);
+        String host = parameters.getParameter(MongodbOutputConfig.HOST_PARAM);
+        String port = parameters.getParameter(MongodbOutputConfig.PORT_PARAM);
+        String database = parameters.getParameter(MongodbOutputConfig.DATABASE_PARAM);
+        String collection = parameters.getParameter(MongodbOutputConfig.COLLECTION_PARAM);
+
+        if (username == null)
+            username = StringUtils.EMPTY;
+        if (password == null)
+            password = StringUtils.EMPTY;
+        else
+            password = mapper.mapPasswordToKey(password);
+        if (host == null)
+            host = MongodbOutputConfig.HOST_DEFAULT_VALUE;
+        if (port == null)
+            port = MongodbOutputConfig.PORT_DEFAULT_VALUE;
+        if (database == null)
+            database = MongodbOutputConfig.DATABASE_DEFAULT_VALUE;
+        if (collection == null)
+            collection = MongodbOutputConfig.COLLECTION_DEFAULT_VALUE;
+
+        newMap.put(MongodbOutputConfig.USERNAME_PARAM, username);
+        newMap.put(MongodbOutputConfig.PASSWORD_PARAM, password);
+        newMap.put(MongodbOutputConfig.HOST_PARAM, host);
+        newMap.put(MongodbOutputConfig.PORT_PARAM, port);
+        newMap.put(MongodbOutputConfig.DATABASE_PARAM, database);
+        newMap.put(MongodbOutputConfig.COLLECTION_PARAM, collection);
     }
 
     /**
@@ -132,59 +174,11 @@ public class MongodbOutputConnector extends BaseOutputConnector {
      */
     @Override
     public boolean isConnected() {
-        return (client != null && mongoDatabase.isAuthenticated());
-    }
-
-    /**
-     * Read the content of a resource, replace the variable ${PARAMNAME} with the
-     * value and copy it to the out.
-     *
-     * @param resName
-     * @param out
-     * @throws ManifoldCFException
-     */
-    private static void outputResource(String resName, IHTTPOutput out, Locale locale, Map<String, String> paramMap)
-            throws ManifoldCFException {
-        Messages.outputResourceWithVelocity(out, locale, resName, paramMap, true);
-    }
-
-    /**
-     * Fill in a Server tab configuration parameter map for calling a Velocity
-     * template.
-     *
-     * @param newMap     is the map to fill in
-     * @param parameters is the current set of configuration parameters
-     */
-    private static void fillInServerConfigurationMap(Map<String, String> newMap, IPasswordMapperActivity mapper,
-                                                     ConfigParams parameters) {
-        String username = parameters.getParameter(MongodbOutputConfig.USERNAME_PARAM);
-        String password = parameters.getParameter(MongodbOutputConfig.PASSWORD_PARAM);
-        String host = parameters.getParameter(MongodbOutputConfig.HOST_PARAM);
-        String port = parameters.getParameter(MongodbOutputConfig.PORT_PARAM);
-        String database = parameters.getParameter(MongodbOutputConfig.DATABASE_PARAM);
-        String collection = parameters.getParameter(MongodbOutputConfig.COLLECTION_PARAM);
-
-        if (username == null)
-            username = StringUtils.EMPTY;
-        if (password == null)
-            password = StringUtils.EMPTY;
-        else
-            password = mapper.mapPasswordToKey(password);
-        if (host == null)
-            host = MongodbOutputConfig.HOST_DEFAULT_VALUE;
-        if (port == null)
-            port = MongodbOutputConfig.PORT_DEFAULT_VALUE;
-        if (database == null)
-            database = MongodbOutputConfig.DATABASE_DEFAULT_VALUE;
-        if (collection == null)
-            collection = MongodbOutputConfig.COLLECTION_DEFAULT_VALUE;
-
-        newMap.put(MongodbOutputConfig.USERNAME_PARAM, username);
-        newMap.put(MongodbOutputConfig.PASSWORD_PARAM, password);
-        newMap.put(MongodbOutputConfig.HOST_PARAM, host);
-        newMap.put(MongodbOutputConfig.PORT_PARAM, port);
-        newMap.put(MongodbOutputConfig.DATABASE_PARAM, database);
-        newMap.put(MongodbOutputConfig.COLLECTION_PARAM, collection);
+        if (client == null) {
+            return false;
+        }
+        DBTCPConnector currentTCPConnection = client.getConnector();
+        return currentTCPConnection.isOpen();
     }
 
     /**
@@ -307,127 +301,6 @@ public class MongodbOutputConnector extends BaseOutputConnector {
 
 
         return null;
-    }
-
-    protected class GetSessionThread extends Thread {
-        protected Throwable exception = null;
-
-        public GetSessionThread() {
-            super();
-            setDaemon(true);
-        }
-
-        public void run() {
-            try {
-                // Create a session
-                if (StringUtils.isEmpty(host) && StringUtils.isEmpty(port)) {
-                    try {
-                        client = new MongoClient();
-                        mongoDatabase = client.getDB(database);
-                    } catch (UnknownHostException ex) {
-                        throw new ManifoldCFException("Mongodb: Default host is not found. Is mongod process running?" + ex.getMessage(), ex);
-                    }
-                } else if (!StringUtils.isEmpty(host) && StringUtils.isEmpty(port)) {
-                    try {
-                        client = new MongoClient(host);
-                        mongoDatabase = client.getDB(database);
-                    } catch (UnknownHostException ex) {
-                        throw new ManifoldCFException("Mongodb: Given host information is not valid or mongod process doesn't run" + ex.getMessage(), ex);
-                    }
-                } else if (!StringUtils.isEmpty(host) && !StringUtils.isEmpty(port)) {
-                    try {
-                        int integerPort = Integer.parseInt(port);
-                        client = new MongoClient(host, integerPort);
-                        mongoDatabase = client.getDB(database);
-                    } catch (UnknownHostException ex) {
-                        throw new ManifoldCFException("Mongodb: Given information is not valid or mongod process doesn't run" + ex.getMessage(), ex);
-                    } catch (NumberFormatException ex) {
-                        throw new ManifoldCFException("Mongodb: Given port is not valid number. " + ex.getMessage(), ex);
-                    }
-                } else if (StringUtils.isEmpty(host) && !StringUtils.isEmpty(port)) {
-                    try {
-                        int integerPort = Integer.parseInt(port);
-                        client = new MongoClient(host, integerPort);
-                        mongoDatabase = client.getDB(database);
-                    } catch (UnknownHostException e) {
-                        Logging.connectors.warn("Mongodb: Given information is not valid or mongod process doesn't run" + e.getMessage(), e);
-                        throw new ManifoldCFException("Mongodb: Given information is not valid or mongod process doesn't run" + e.getMessage(), e);
-                    } catch (NumberFormatException e) {
-                        Logging.connectors.warn("Mongodb: Given port is not valid number. " + e.getMessage(), e);
-                        throw new ManifoldCFException("Mongodb: Given port is not valid number. " + e.getMessage(), e);
-                    }
-                }
-
-                //making authentication mandatory, it is the only way to check if mongod is running in mongod2.x versions
-                boolean auth = mongoDatabase.authenticate(username, password.toCharArray());
-                if (!auth) {
-                    Logging.connectors.warn("Mongodb:Authentication Error! Given database username and password doesn't match.");
-                    throw new ManifoldCFException("Mongodb: Given database username and password doesn't match.");
-                } else {
-                    if (Logging.connectors.isDebugEnabled()) {
-                        Logging.connectors.debug("Mongodb: Username = '" + username + "'");
-                        Logging.connectors.debug("Mongodb: Password exists");
-                    }
-                }
-
-            } catch (Throwable e) {
-                this.exception = e;
-            }
-        }
-
-        public Throwable getException() {
-            return exception;
-        }
-    }
-
-    protected class CheckConnectionThread extends Thread {
-        protected Throwable exception = null;
-
-        public CheckConnectionThread() {
-            super();
-            setDaemon(true);
-        }
-
-        public void run() {
-            try {
-                getSession();
-                if (!mongoDatabase.isAuthenticated()) {
-                    throw new ManifoldCFException("Mongodb: not authenticated on the database!");
-                }
-
-            } catch (Throwable e) {
-                Logging.connectors.warn("Mongodb: Error checking repository: " + e.getMessage(), e);
-                this.exception = e;
-            }
-        }
-
-        public Throwable getException() {
-            return exception;
-        }
-
-    }
-
-    protected class DestroySessionThread extends Thread {
-        protected Throwable exception = null;
-
-        public DestroySessionThread() {
-            super();
-            setDaemon(true);
-        }
-
-        public void run() {
-            try {
-                client = null;
-                mongoDatabase = null;
-            } catch (Throwable e) {
-                this.exception = e;
-            }
-        }
-
-        public Throwable getException() {
-            return exception;
-        }
-
     }
 
     /**
@@ -609,6 +482,8 @@ public class MongodbOutputConnector extends BaseOutputConnector {
                 if (thr != null) {
                     if (thr instanceof RemoteException)
                         throw (RemoteException) thr;
+                    else if (thr instanceof ConnectException)
+                        throw new ManifoldCFException("Mongodb: Error during checking connection: is Mongod running?" + thr.getMessage(), thr);
                     else if (thr instanceof MongoException)
                         throw new ManifoldCFException("Mongodb: Error during checking connection: " + thr.getMessage(), thr);
                     else if (thr instanceof ManifoldCFException)
@@ -634,6 +509,132 @@ public class MongodbOutputConnector extends BaseOutputConnector {
                 continue;
             }
         }
+    }
+
+    protected class GetSessionThread extends Thread {
+        protected Throwable exception = null;
+
+        public GetSessionThread() {
+            super();
+            setDaemon(true);
+        }
+
+        public void run() {
+            try {
+                // Create a session
+                if (client == null) {
+                    if (StringUtils.isEmpty(host) && StringUtils.isEmpty(port)) {
+                        try {
+                            client = new MongoClient();
+                            mongoDatabase = client.getDB(database);
+                        } catch (UnknownHostException ex) {
+                            throw new ManifoldCFException("Mongodb: Default host is not found. Is mongod process running?" + ex.getMessage(), ex);
+                        }
+                    } else if (!StringUtils.isEmpty(host) && StringUtils.isEmpty(port)) {
+                        try {
+                            client = new MongoClient(host);
+                            mongoDatabase = client.getDB(database);
+                        } catch (UnknownHostException ex) {
+                            throw new ManifoldCFException("Mongodb: Given host information is not valid or mongod process doesn't run" + ex.getMessage(), ex);
+                        }
+                    } else if (!StringUtils.isEmpty(host) && !StringUtils.isEmpty(port)) {
+                        try {
+                            int integerPort = Integer.parseInt(port);
+                            client = new MongoClient(host, integerPort);
+                            mongoDatabase = client.getDB(database);
+                        } catch (UnknownHostException ex) {
+                            throw new ManifoldCFException("Mongodb: Given information is not valid or mongod process doesn't run" + ex.getMessage(), ex);
+                        } catch (NumberFormatException ex) {
+                            throw new ManifoldCFException("Mongodb: Given port is not valid number. " + ex.getMessage(), ex);
+                        }
+                    } else if (StringUtils.isEmpty(host) && !StringUtils.isEmpty(port)) {
+                        try {
+                            int integerPort = Integer.parseInt(port);
+                            client = new MongoClient(host, integerPort);
+                            mongoDatabase = client.getDB(database);
+                        } catch (UnknownHostException e) {
+                            Logging.connectors.warn("Mongodb: Given information is not valid or mongod process doesn't run" + e.getMessage(), e);
+                            throw new ManifoldCFException("Mongodb: Given information is not valid or mongod process doesn't run" + e.getMessage(), e);
+                        } catch (NumberFormatException e) {
+                            Logging.connectors.warn("Mongodb: Given port is not valid number. " + e.getMessage(), e);
+                            throw new ManifoldCFException("Mongodb: Given port is not valid number. " + e.getMessage(), e);
+                        }
+                    }
+                    if (!StringUtils.isEmpty(username) && !StringUtils.isEmpty(password)) {
+                        boolean auth = mongoDatabase.authenticate(username, password.toCharArray());
+                        if (!auth) {
+                            Logging.connectors.warn("Mongodb:Authentication Error! Given database username and password doesn't match.");
+                            throw new ManifoldCFException("Mongodb: Given database username and password doesn't match.");
+                        } else {
+                            if (Logging.connectors.isDebugEnabled()) {
+                                Logging.connectors.debug("Mongodb: Username = '" + username + "'");
+                                Logging.connectors.debug("Mongodb: Password exists");
+                            }
+                        }
+                    }
+                }
+
+            } catch (Throwable e) {
+                this.exception = e;
+            }
+        }
+
+        public Throwable getException() {
+            return exception;
+        }
+    }
+
+    protected class CheckConnectionThread extends Thread {
+        protected Throwable exception = null;
+
+        public CheckConnectionThread() {
+            super();
+            setDaemon(true);
+        }
+
+        public void run() {
+            try {
+                if (client != null) {
+                    DBTCPConnector dbtcpConnector = client.getConnector();
+                    DBPortPool dbPortPool = dbtcpConnector.getDBPortPool(client.getAddress());
+                    DBPort dbPort = dbPortPool.get();
+                    dbPort.ensureOpen();
+                    client = null;
+                }
+
+            } catch (Throwable e) {
+                Logging.connectors.warn("Mongodb: Error checking repository: " + e.getMessage(), e);
+                this.exception = e;
+            }
+        }
+
+        public Throwable getException() {
+            return exception;
+        }
+
+    }
+
+    protected class DestroySessionThread extends Thread {
+        protected Throwable exception = null;
+
+        public DestroySessionThread() {
+            super();
+            setDaemon(true);
+        }
+
+        public void run() {
+            try {
+                client = null;
+                mongoDatabase = null;
+            } catch (Throwable e) {
+                this.exception = e;
+            }
+        }
+
+        public Throwable getException() {
+            return exception;
+        }
+
     }
 
 
