@@ -1,21 +1,23 @@
 package org.apache.manifoldcf.agents.output.mongodboutput;
 
 import com.mongodb.*;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.manifoldcf.agents.interfaces.IOutputAddActivity;
+import org.apache.manifoldcf.agents.interfaces.IOutputRemoveActivity;
+import org.apache.manifoldcf.agents.interfaces.RepositoryDocument;
 import org.apache.manifoldcf.agents.interfaces.ServiceInterruption;
 import org.apache.manifoldcf.agents.output.BaseOutputConnector;
 import org.apache.manifoldcf.core.interfaces.*;
 import org.apache.manifoldcf.crawler.system.Logging;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InterruptedIOException;
 import java.net.ConnectException;
 import java.net.UnknownHostException;
 import java.rmi.RemoteException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 public class MongodbOutputConnector extends BaseOutputConnector {
 
@@ -32,6 +34,33 @@ public class MongodbOutputConnector extends BaseOutputConnector {
      * Delete activity
      */
     protected final static String ACTIVITY_DELETE = "Delete";
+
+    private static final String MONGODB_PROPERTY_PREFIX = "mongodb:";
+
+    /**
+     * Document accepted
+     */
+    private final static int DOCUMENT_STATUS_ACCEPTED = 0;
+
+    private static final String DOCUMENT_STATUS_ACCEPTED_DESC = "Injection OK - ";
+
+    private static final String DOCUMENT_STATUS_REJECTED_DESC = "Injection KO - ";
+
+    /**
+     * Document permanently rejected
+     */
+    private final static int DOCUMENT_STATUS_REJECTED = 1;
+
+    /**
+     * Document remove accepted
+     */
+    private final static String DOCUMENT_DELETION_STATUS_ACCEPTED = "Remove request accepted";
+
+    /**
+     * Document remove permanently rejected
+     */
+    private final static String DOCUMENT_DELETION_STATUS_REJECTED = "Remove request rejected";
+
     private static final String MONGODB_TAB_PARAMETERS = "MongodbConnector.Parameters";
     /**
      * Forward to the javascript to check the configuration parameters
@@ -63,57 +92,6 @@ public class MongodbOutputConnector extends BaseOutputConnector {
         super();
     }
 
-    /**
-     * Read the content of a resource, replace the variable ${PARAMNAME} with the
-     * value and copy it to the out.
-     *
-     * @param resName
-     * @param out
-     * @throws ManifoldCFException
-     */
-    private static void outputResource(String resName, IHTTPOutput out, Locale locale, Map<String, String> paramMap)
-            throws ManifoldCFException {
-        Messages.outputResourceWithVelocity(out, locale, resName, paramMap, true);
-    }
-
-    /**
-     * Fill in a Server tab configuration parameter map for calling a Velocity
-     * template.
-     *
-     * @param newMap     is the map to fill in
-     * @param parameters is the current set of configuration parameters
-     */
-    private static void fillInServerConfigurationMap(Map<String, String> newMap, IPasswordMapperActivity mapper,
-                                                     ConfigParams parameters) {
-        String username = parameters.getParameter(MongodbOutputConfig.USERNAME_PARAM);
-        String password = parameters.getParameter(MongodbOutputConfig.PASSWORD_PARAM);
-        String host = parameters.getParameter(MongodbOutputConfig.HOST_PARAM);
-        String port = parameters.getParameter(MongodbOutputConfig.PORT_PARAM);
-        String database = parameters.getParameter(MongodbOutputConfig.DATABASE_PARAM);
-        String collection = parameters.getParameter(MongodbOutputConfig.COLLECTION_PARAM);
-
-        if (username == null)
-            username = StringUtils.EMPTY;
-        if (password == null)
-            password = StringUtils.EMPTY;
-        else
-            password = mapper.mapPasswordToKey(password);
-        if (host == null)
-            host = MongodbOutputConfig.HOST_DEFAULT_VALUE;
-        if (port == null)
-            port = MongodbOutputConfig.PORT_DEFAULT_VALUE;
-        if (database == null)
-            database = MongodbOutputConfig.DATABASE_DEFAULT_VALUE;
-        if (collection == null)
-            collection = MongodbOutputConfig.COLLECTION_DEFAULT_VALUE;
-
-        newMap.put(MongodbOutputConfig.USERNAME_PARAM, username);
-        newMap.put(MongodbOutputConfig.PASSWORD_PARAM, password);
-        newMap.put(MongodbOutputConfig.HOST_PARAM, host);
-        newMap.put(MongodbOutputConfig.PORT_PARAM, port);
-        newMap.put(MongodbOutputConfig.DATABASE_PARAM, database);
-        newMap.put(MongodbOutputConfig.COLLECTION_PARAM, collection);
-    }
 
     /**
      * Return the list of activities that this connector supports (i.e. writes
@@ -193,6 +171,59 @@ public class MongodbOutputConnector extends BaseOutputConnector {
      * @param parameters    are the configuration parameters, as they currently exist, for
      *                      this connection being configured.
      */
+
+    /**
+     * Read the content of a resource, replace the variable ${PARAMNAME} with the
+     * value and copy it to the out.
+     *
+     * @param resName
+     * @param out
+     * @throws ManifoldCFException
+     */
+    private static void outputResource(String resName, IHTTPOutput out, Locale locale, Map<String, String> paramMap)
+            throws ManifoldCFException {
+        Messages.outputResourceWithVelocity(out, locale, resName, paramMap, true);
+    }
+
+    /**
+     * Fill in a Server tab configuration parameter map for calling a Velocity
+     * template.
+     *
+     * @param newMap     is the map to fill in
+     * @param parameters is the current set of configuration parameters
+     */
+    private static void fillInServerConfigurationMap(Map<String, String> newMap, IPasswordMapperActivity mapper,
+                                                     ConfigParams parameters) {
+        String username = parameters.getParameter(MongodbOutputConfig.USERNAME_PARAM);
+        String password = parameters.getParameter(MongodbOutputConfig.PASSWORD_PARAM);
+        String host = parameters.getParameter(MongodbOutputConfig.HOST_PARAM);
+        String port = parameters.getParameter(MongodbOutputConfig.PORT_PARAM);
+        String database = parameters.getParameter(MongodbOutputConfig.DATABASE_PARAM);
+        String collection = parameters.getParameter(MongodbOutputConfig.COLLECTION_PARAM);
+
+        if (username == null)
+            username = StringUtils.EMPTY;
+        if (password == null)
+            password = StringUtils.EMPTY;
+        else
+            password = mapper.mapPasswordToKey(password);
+        if (host == null)
+            host = MongodbOutputConfig.HOST_DEFAULT_VALUE;
+        if (port == null)
+            port = MongodbOutputConfig.PORT_DEFAULT_VALUE;
+        if (database == null)
+            database = MongodbOutputConfig.DATABASE_DEFAULT_VALUE;
+        if (collection == null)
+            collection = MongodbOutputConfig.COLLECTION_DEFAULT_VALUE;
+
+        newMap.put(MongodbOutputConfig.USERNAME_PARAM, username);
+        newMap.put(MongodbOutputConfig.PASSWORD_PARAM, password);
+        newMap.put(MongodbOutputConfig.HOST_PARAM, host);
+        newMap.put(MongodbOutputConfig.PORT_PARAM, port);
+        newMap.put(MongodbOutputConfig.DATABASE_PARAM, database);
+        newMap.put(MongodbOutputConfig.COLLECTION_PARAM, collection);
+    }
+
     @Override
     public void viewConfiguration(IThreadContext threadContext, IHTTPOutput out, Locale locale, ConfigParams parameters)
             throws ManifoldCFException, IOException {
@@ -637,5 +668,121 @@ public class MongodbOutputConnector extends BaseOutputConnector {
 
     }
 
+    @Override
+    public int addOrReplaceDocumentWithException(String documentURI, VersionContext pipelineDescription,
+                                                 RepositoryDocument document, String authorityNameString, IOutputAddActivity activities)
+            throws ManifoldCFException, ServiceInterruption, IOException {
 
+        getSession();
+
+        //to get an exception if write fails
+        client.setWriteConcern(WriteConcern.SAFE);
+
+        long startTime = System.currentTimeMillis();
+        String resultDescription = StringUtils.EMPTY;
+        String fileName = StringUtils.EMPTY;
+        InputStream inputStream = null;
+        Long binaryLength = null;
+        String mimeType = StringUtils.EMPTY;
+
+        //collecting meta information
+        fileName = document.getFileName();
+        Date creationDate = document.getCreatedDate();
+        Date lastModificationDate = document.getModifiedDate();
+        String objectId = StringUtils.EMPTY;
+        mimeType = document.getMimeType();
+        binaryLength = document.getBinaryLength();
+
+        //check if the repository connector includes the content path
+        String primaryPath = StringUtils.EMPTY;
+        List<String> sourcePath = document.getSourcePath();
+        if (sourcePath != null && !sourcePath.isEmpty()) {
+            primaryPath = sourcePath.get(0);
+        }
+
+        // Content Stream
+        inputStream = document.getBinaryStream();
+
+        try {
+
+            String content;
+            content = IOUtils.toString(inputStream, "UTF-8");
+
+            DBCollection mongoCollection = mongoDatabase.getCollection(collection);
+
+            BasicDBObject newDocument = new BasicDBObject();
+            newDocument.append("fileName", fileName)
+                    .append("creationDate ", creationDate)
+                    .append("lastModificationDate ", lastModificationDate)
+                    .append("binaryLength ", binaryLength)
+                    .append("documentURI ", documentURI)
+                    .append("mimeType ", mimeType)
+                    .append("creationDate ", lastModificationDate)
+                    .append("theString ", content)
+                    .append("primaryPath", primaryPath);
+
+            BasicDBObject searchQuery = new BasicDBObject().append("documentURI", documentURI);
+            DBCursor cursor = mongoCollection.find(searchQuery);
+            WriteResult result;
+            if (cursor.count() > 0) {
+                result = mongoCollection.update(searchQuery, newDocument);
+            } else {
+                result = mongoCollection.insert(newDocument);
+            }
+            Logging.connectors.info("Number of documents indexed : " + result.getN());
+
+            if (result.getN() > 0) {
+                resultDescription = DOCUMENT_STATUS_ACCEPTED_DESC;
+
+                return DOCUMENT_STATUS_ACCEPTED;
+
+            } else {
+
+                resultDescription = DOCUMENT_STATUS_REJECTED_DESC;
+                return DOCUMENT_STATUS_REJECTED;
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            if (inputStream != null) {
+                inputStream.close();
+            }
+
+            activities.recordActivity(startTime, ACTIVITY_INJECTION, document.getBinaryLength(), documentURI, resultDescription,
+                    resultDescription);
+        }
+        return DOCUMENT_STATUS_REJECTED;
+    }
+
+    @Override
+    public void removeDocument(String documentURI, String outputDescription, IOutputRemoveActivity activities)
+            throws ManifoldCFException, ServiceInterruption {
+        getSession();
+        long startTime = System.currentTimeMillis();
+        String resultDescription = StringUtils.EMPTY;
+
+        try {
+
+            DBCollection mongoCollection = mongoDatabase.getCollection(collection);
+
+            BasicDBObject query = new BasicDBObject();
+            query.append("documentURI", documentURI);
+
+            WriteResult result = mongoCollection.remove(query);
+            Logging.connectors.info("Number of documents deleted : " + result.getN());
+
+            if (result.getN() > 0) {
+                resultDescription = DOCUMENT_DELETION_STATUS_ACCEPTED;
+            } else {
+                resultDescription = DOCUMENT_DELETION_STATUS_REJECTED;
+            }
+
+        } catch (Exception e) {
+            resultDescription = DOCUMENT_DELETION_STATUS_REJECTED;
+            throw new ManifoldCFException(e.getMessage(), e);
+        } finally {
+            activities.recordActivity(startTime, ACTIVITY_DELETE, null, documentURI, null, resultDescription);
+        }
+    }
 }
