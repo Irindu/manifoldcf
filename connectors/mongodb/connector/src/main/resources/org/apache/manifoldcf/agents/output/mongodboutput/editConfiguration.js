@@ -20,54 +20,6 @@ limitations under the License.
     <!--
         function checkConfig() {
             return true;
-            if (editconnection.host) {
-                if (editconnection.host.value == "") {
-                    alert("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('MongodbConnector.PleaseSupplyValidMongodbHostname'))");
-                    SelectTab("$Encoder.javascriptBodyEscape($ResourceBundle.getString('MongodbConnector.Parameters'))");
-                    editconnection.host.focus();
-                    return false;
-                }
-            }
-            if (editconnection.port) {
-                if (editconnection.port.value == "") {
-                    alert("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('MongodbConnector.PleaseSupplyValidPortNumber'))");
-                    SelectTab("$Encoder.javascriptBodyEscape($ResourceBundle.getString('MongodbConnector.Parameters'))");
-                    editconnection.port.focus();
-                    return false;
-                }
-            }
-            if (editconnection.username) {
-                if (editconnection.username.value == "") {
-                    alert("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('MongodbConnector.PleaseSupplyValidUserName'))");
-                    SelectTab("$Encoder.javascriptBodyEscape($ResourceBundle.getString('MongodbConnector.Parameters'))");
-                    editconnection.username.focus();
-                    return false;
-                }
-            }
-            if (editconnection.password) {
-                if (editconnection.database.value == "") {
-                    alert("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('MongodbConnector.PleaseSupplyValidPassword'))");
-                    SelectTab("$Encoder.javascriptBodyEscape($ResourceBundle.getString('MongodbConnector.Parameters'))");
-                    editconnection.password.focus();
-                    return false;
-                }
-            }
-            if (editconnection.database) {
-                if (editconnection.database.value == "") {
-                    alert("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('MongodbConnector.PleaseSupplyValidDatabase'))");
-                    SelectTab("$Encoder.javascriptBodyEscape($ResourceBundle.getString('MongodbConnector.Parameters'))");
-                    editconnection.database.focus();
-                    return false;
-                }
-            }
-            if (editconnection.collection) {
-                if (editconnection.collection.value == "") {
-                    alert("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('MongodbConnector.PleaseSupplyValidCollection'))");
-                    editconnection.collection.focus();
-                    return false;
-                }
-            }
-            return true;
         }
 
 function checkConfigForSave() {
@@ -93,20 +45,20 @@ function checkConfigForSave() {
     //         return false;
     //     }
     // }
-    if (editconnection.username) {
-        if (editconnection.username.value == "") {
-            alert("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('MongodbConnector.PleaseSupplyValidUserName'))");
-            editconnection.username.focus();
-            return false;
-        }
-    }
-    if (editconnection.password) {
-        if (editconnection.password.value == "") {
-            alert("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('MongodbConnector.PleaseSupplyValidPassword'))");
-            editconnection.password.focus();
-            return false;
-        }
-    }
+    // if (editconnection.username) {
+    //     if (editconnection.username.value == "") {
+    //         alert("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('MongodbConnector.PleaseSupplyValidUserName'))");
+    //         editconnection.username.focus();
+    //         return false;
+    //     }
+    // }
+    // if (editconnection.password) {
+    //     if (editconnection.password.value == "") {
+    //         alert("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('MongodbConnector.PleaseSupplyValidPassword'))");
+    //         editconnection.password.focus();
+    //         return false;
+    //     }
+    // }
     if (editconnection.database) {
         if (editconnection.database.value == "") {
             alert("$Encoder.bodyJavascriptEscape($ResourceBundle.getString('MongodbConnector.PleaseSupplyValidDatabase'))");

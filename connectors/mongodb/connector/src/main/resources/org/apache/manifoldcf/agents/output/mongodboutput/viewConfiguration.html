@@ -37,7 +37,13 @@
         <td class="description">
             <nobr>$Encoder.bodyEscape($ResourceBundle.getString('MongodbConnector.PasswordColon'))</nobr>
         </td>
-        <td class="value">********</td>
+        <td class="value">
+            #if($Encoder.bodyEscape($PASSWORD) != "")
+            ********
+            #else
+
+            #end
+        </td>
     </tr>
     <tr>
         <td class="description">
