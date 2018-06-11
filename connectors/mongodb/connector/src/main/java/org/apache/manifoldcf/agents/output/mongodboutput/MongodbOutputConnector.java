@@ -1,6 +1,7 @@
 package org.apache.manifoldcf.agents.output.mongodboutput;
 
 import com.mongodb.*;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.manifoldcf.agents.interfaces.IOutputAddActivity;
@@ -680,20 +681,16 @@ public class MongodbOutputConnector extends BaseOutputConnector {
 
         long startTime = System.currentTimeMillis();
         String resultDescription = StringUtils.EMPTY;
-        String fileName = StringUtils.EMPTY;
-        InputStream inputStream = null;
-        Long binaryLength = null;
-        String mimeType = StringUtils.EMPTY;
 
-        //collecting meta information
-        fileName = document.getFileName();
+        // Standard document fields
+        String fileName = document.getFileName();
+        Long binaryLength = document.getBinaryLength();
+        String mimeType = document.getMimeType();
         Date creationDate = document.getCreatedDate();
         Date lastModificationDate = document.getModifiedDate();
-        String objectId = StringUtils.EMPTY;
-        mimeType = document.getMimeType();
-        binaryLength = document.getBinaryLength();
+        Date indexingDate = document.getIndexingDate();
 
-        //check if the repository connector includes the content path
+        //   check if the repository connector includes the content path
         String primaryPath = StringUtils.EMPTY;
         List<String> sourcePath = document.getSourcePath();
         if (sourcePath != null && !sourcePath.isEmpty()) {
@@ -701,12 +698,12 @@ public class MongodbOutputConnector extends BaseOutputConnector {
         }
 
         // Content Stream
-        inputStream = document.getBinaryStream();
+        InputStream inputStream = document.getBinaryStream();
 
         try {
 
-            String content;
-            content = IOUtils.toString(inputStream, "UTF-8");
+            byte[] bytes = IOUtils.toByteArray(inputStream);
+            String content = Base64.encodeBase64String(bytes);
 
             DBCollection mongoCollection = mongoDatabase.getCollection(collection);
 
@@ -714,12 +711,25 @@ public class MongodbOutputConnector extends BaseOutputConnector {
             newDocument.append("fileName", fileName)
                     .append("creationDate ", creationDate)
                     .append("lastModificationDate ", lastModificationDate)
+                    .append("indexingDate ", indexingDate)
                     .append("binaryLength ", binaryLength)
                     .append("documentURI ", documentURI)
                     .append("mimeType ", mimeType)
-                    .append("creationDate ", lastModificationDate)
-                    .append("theString ", content)
+                    .append("content ", content)
                     .append("primaryPath", primaryPath);
+
+            // Rest of the fields
+            Iterator<String> i = document.getFields();
+            while (i.hasNext()) {
+                String fieldName = i.next();
+                Date[] dateFieldValues = document.getFieldAsDates(fieldName);
+                if (dateFieldValues != null) {
+                    newDocument.append(fieldName, dateFieldValues);
+                } else {
+                    String[] fieldValues = document.getFieldAsStrings(fieldName);
+                    newDocument.append(fieldName, fieldValues);
+                }
+            }
 
             BasicDBObject searchQuery = new BasicDBObject().append("documentURI", documentURI);
             DBCursor cursor = mongoCollection.find(searchQuery);
