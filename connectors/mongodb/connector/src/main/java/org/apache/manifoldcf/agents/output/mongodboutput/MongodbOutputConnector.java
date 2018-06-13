@@ -709,13 +709,13 @@ public class MongodbOutputConnector extends BaseOutputConnector {
 
             BasicDBObject newDocument = new BasicDBObject();
             newDocument.append("fileName", fileName)
-                    .append("creationDate ", creationDate)
-                    .append("lastModificationDate ", lastModificationDate)
-                    .append("indexingDate ", indexingDate)
-                    .append("binaryLength ", binaryLength)
-                    .append("documentURI ", documentURI)
-                    .append("mimeType ", mimeType)
-                    .append("content ", content)
+                    .append("creationDate", creationDate)
+                    .append("lastModificationDate", lastModificationDate)
+                    .append("indexingDate", indexingDate)
+                    .append("binaryLength", binaryLength)
+                    .append("documentURI", documentURI)
+                    .append("mimeType", mimeType)
+                    .append("content", content)
                     .append("primaryPath", primaryPath);
 
             // Rest of the fields
@@ -733,27 +733,40 @@ public class MongodbOutputConnector extends BaseOutputConnector {
 
             BasicDBObject searchQuery = new BasicDBObject().append("documentURI", documentURI);
             DBCursor cursor = mongoCollection.find(searchQuery);
+            Long numberOfDocumentsBeforeInsert = mongoCollection.count();
             WriteResult result;
             if (cursor.count() > 0) {
                 result = mongoCollection.update(searchQuery, newDocument);
             } else {
                 result = mongoCollection.insert(newDocument);
             }
-            Logging.connectors.info("Number of documents indexed : " + result.getN());
+            //result.getLastError().get("err") == null
+            Long numberOfDocumentsAfterInsert = mongoCollection.count();
+            Long numberOfDocumentsInserted = numberOfDocumentsAfterInsert - numberOfDocumentsBeforeInsert;
+            Long numberOfDocumentsIndexed = (numberOfDocumentsInserted != 0)? numberOfDocumentsInserted : result.getN();
+            Logging.connectors.info("Number of documents indexed : " + numberOfDocumentsIndexed);
 
-            if (result.getN() > 0) {
+            //check if a document is inserted or updated (numberOfDocumentsInserted > 0) || (result.getN() > 0)
+            if ( numberOfDocumentsIndexed > 0) {
                 resultDescription = DOCUMENT_STATUS_ACCEPTED_DESC;
-
                 return DOCUMENT_STATUS_ACCEPTED;
-
             } else {
-
                 resultDescription = DOCUMENT_STATUS_REJECTED_DESC;
                 return DOCUMENT_STATUS_REJECTED;
             }
 
+        } catch (MongoException e) {
+            resultDescription = DOCUMENT_STATUS_REJECTED_DESC;
+            Logging.connectors.info("Mongodb: Error inserting or updating : " + e.getMessage());
+            throw new ManifoldCFException(e.getMessage(), e);
+        } catch (IOException e) {
+            resultDescription = DOCUMENT_STATUS_REJECTED_DESC;
+            Logging.connectors.info("Error converting the input stream to byte array : " + e.getMessage());
+            throw new ManifoldCFException(e.getMessage(), e);
         } catch (Exception e) {
-            e.printStackTrace();
+            resultDescription = DOCUMENT_STATUS_REJECTED_DESC;
+            Logging.connectors.info("Error encoding content : " + e.getMessage());
+            throw new ManifoldCFException(e.getMessage(), e);
         } finally {
             if (inputStream != null) {
                 inputStream.close();
@@ -762,7 +775,6 @@ public class MongodbOutputConnector extends BaseOutputConnector {
             activities.recordActivity(startTime, ACTIVITY_INJECTION, document.getBinaryLength(), documentURI, resultDescription,
                     resultDescription);
         }
-        return DOCUMENT_STATUS_REJECTED;
     }
 
     @Override
