@@ -48,9 +48,10 @@
     <property name="commons-collections4.version" value="4.1"/>
     <property name="commons-discovery.version" value="0.5"/>
     <property name="commons-el.version" value="1.0"/>
-    <property name="commons-fileupload.version" value="1.2.2"/>
+    <property name="commons-fileupload.version" value="1.3.3"/>
     <property name="commons-io.version" value="2.5"/>
     <property name="commons-lang.version" value="2.6"/>
+    <property name="commons-lang3.version" value="3.6"/>
     <property name="commons-logging.version" value="1.2"/>
     <property name="commons-configuration.version" value="1.6"/>
     <property name="commons-cli.version" value="1.2"/>
@@ -560,7 +561,7 @@
     <target name="doc" depends="deliver-site-doc"/>
     
     <target name="set-version">
-      <property name="release-version" value="2.10-dev"/>
+      <property name="release-version" value="2.11-dev"/>
     </target>
     
     <target name="create-source-zip" depends="set-version">
@@ -883,28 +884,28 @@ Use Apache Forrest version forrest-0.9-dev or higher.
         <mkdir dir="lib"/>
         <antcall target="download-via-nuxeo">
             <param name="project-path" value="org/nuxeo/client"/>
-            <param name="artifact-version" value="2.5"/>
+            <param name="artifact-version" value="3.0.1"/>
             <param name="target" value="lib"/>
             <param name="artifact-name" value="nuxeo-java-client"/>
             <param name="artifact-type" value="jar"/>
         </antcall>
         <antcall target="download-via-maven">
             <param name="project-path" value="com/squareup/retrofit2"/>
-            <param name="artifact-version" value="2.0.2"/>
+            <param name="artifact-version" value="2.3.0"/>
             <param name="target" value="lib"/>
             <param name="artifact-name" value="retrofit"/>
             <param name="artifact-type" value="jar"/>
         </antcall>
         <antcall target="download-via-maven">
             <param name="project-path" value="com/squareup/okhttp3"/>
-            <param name="artifact-version" value="3.0.0-RC1"/>
+            <param name="artifact-version" value="3.9.1"/>
             <param name="target" value="lib"/>
             <param name="artifact-name" value="okhttp"/>
             <param name="artifact-type" value="jar"/>
         </antcall>
         <antcall target="download-via-maven">
             <param name="project-path" value="com/squareup/okio"/>
-            <param name="artifact-version" value="1.6.0"/>
+            <param name="artifact-version" value="1.13.0"/>
             <param name="target" value="lib"/>
             <param name="artifact-name" value="okio"/>
             <param name="artifact-type" value="jar"/>
@@ -1312,6 +1313,12 @@ Use Apache Forrest version forrest-0.9-dev or higher.
             <param name="project-path" value="commons-lang"/>
             <param name="artifact-version" value="${commons-lang.version}"/>
             <param name="artifact-name" value="commons-lang"/>
+            <param name="artifact-type" value="jar"/>
+        </antcall>
+        <antcall target="download-via-maven"><param name="target" value="lib"/>
+            <param name="project-path" value="org/apache/commons"/>
+            <param name="artifact-version" value="${commons-lang3.version}"/>
+            <param name="artifact-name" value="commons-lang3"/>
             <param name="artifact-type" value="jar"/>
         </antcall>
         <antcall target="download-via-maven"><param name="target" value="lib"/>
@@ -2682,6 +2689,42 @@ Use Apache Forrest version forrest-0.9-dev or higher.
             <param name="artifact-type" value="jar"/>
         </antcall>
         <antcall target="download-via-maven"><param name="target" value="lib"/>
+            <param name="project-path" value="org/ow2/asm"/>
+            <param name="artifact-name" value="asm-debug-all"/>
+            <param name="artifact-version" value="${asm.version}"/>
+            <param name="artifact-type" value="jar"/>
+        </antcall>
+        <antcall target="download-via-maven"><param name="target" value="lib"/>
+            <param name="project-path" value="org/ow2/asm"/>
+            <param name="artifact-name" value="asm-analysis"/>
+            <param name="artifact-version" value="${asm.version}"/>
+            <param name="artifact-type" value="jar"/>
+        </antcall>
+        <antcall target="download-via-maven"><param name="target" value="lib"/>
+            <param name="project-path" value="org/ow2/asm"/>
+            <param name="artifact-name" value="asm-commons"/>
+            <param name="artifact-version" value="${asm.version}"/>
+            <param name="artifact-type" value="jar"/>
+        </antcall>
+        <antcall target="download-via-maven"><param name="target" value="lib"/>
+            <param name="project-path" value="org/ow2/asm"/>
+            <param name="artifact-name" value="asm"/>
+            <param name="artifact-version" value="${asm.version}"/>
+            <param name="artifact-type" value="jar"/>
+        </antcall>
+        <antcall target="download-via-maven"><param name="target" value="lib"/>
+            <param name="project-path" value="org/ow2/asm"/>
+            <param name="artifact-name" value="asm-tree"/>
+            <param name="artifact-version" value="${asm.version}"/>
+            <param name="artifact-type" value="jar"/>
+        </antcall>
+        <antcall target="download-via-maven"><param name="target" value="lib"/>
+            <param name="project-path" value="org/ow2/asm"/>
+            <param name="artifact-name" value="asm-util"/>
+            <param name="artifact-version" value="${asm.version}"/>
+            <param name="artifact-type" value="jar"/>
+        </antcall>
+        <antcall target="download-via-maven"><param name="target" value="lib"/>
             <param name="project-path" value="com/adobe/xmp"/>
             <param name="artifact-name" value="xmpcore"/>
             <param name="artifact-version" value="${xmpcore.version}"/>
@@ -2727,6 +2770,30 @@ Use Apache Forrest version forrest-0.9-dev or higher.
             <param name="project-path" value="com/googlecode/mp4parser"/>
             <param name="artifact-name" value="isoparser"/>
             <param name="artifact-version" value="${mp4parser.version}"/>
+            <param name="artifact-type" value="jar"/>
+        </antcall>
+        <antcall target="download-via-maven"><param name="target" value="lib"/>
+            <param name="project-path" value="org/apache/cxf"/>
+            <param name="artifact-name" value="cxf-core"/>
+            <param name="artifact-version" value="${cxf.version}"/>
+            <param name="artifact-type" value="jar"/>
+        </antcall>
+        <antcall target="download-via-maven"><param name="target" value="lib"/>
+            <param name="project-path" value="org/apache/cxf"/>
+            <param name="artifact-name" value="cxf-rt-frontend-jaxrs"/>
+            <param name="artifact-version" value="${cxf.version}"/>
+            <param name="artifact-type" value="jar"/>
+        </antcall>
+        <antcall target="download-via-maven"><param name="target" value="lib"/>
+            <param name="project-path" value="org/apache/cxf"/>
+            <param name="artifact-name" value="cxf-rt-transports-http"/>
+            <param name="artifact-version" value="${cxf.version}"/>
+            <param name="artifact-type" value="jar"/>
+        </antcall>
+        <antcall target="download-via-maven"><param name="target" value="lib"/>
+            <param name="project-path" value="org/apache/cxf"/>
+            <param name="artifact-name" value="cxf-rt-rs-client"/>
+            <param name="artifact-version" value="${cxf.version}"/>
             <param name="artifact-type" value="jar"/>
         </antcall>
         <antcall target="download-via-maven"><param name="target" value="lib"/>

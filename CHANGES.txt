@@ -1,7 +1,31 @@
 ManifoldCF Change Log
 $Id$
 
-======================= 2.10-dev =====================
+======================= 2.11-dev =====================
+
+CONNECTORS-1503: Fix for Solr standard update handler
+parameter transmission to Solr.
+
+======================= Release 2.10 =====================
+
+CONNECTORS-1501: Add dynamic snippet for the next Apache event
+(Piergiorgio Lucidi)
+
+CONNECTORS-1437: Documentation for the CMIS Output Connector
+(Piergiorgio Lucidi)
+
+CONNECTORS-1356: Initial implementation of the CMIS Output Connector
+(Piergiorgio Lucidi)
+
+CONNECTORS-1462: Add support for rootPath attribute in File System Connector repository
+(Luis Cabaceira)
+
+CONNECTORS-1499: Reading in JSON in exported format did not
+preserve the order because the new JSON parser does things in
+hash order for keys in objects.  The fix is to use the more verbose
+alternate form if there's any possibility of order dependency being
+needed.
+(Karl Wright)
 
 CONNECTORS-1493: Jira connector could not fetch acls.
 (Damien Collis, Karl Wright)
@@ -110,6 +134,9 @@ CONNECTORS-1440: Add support for created date in File System connector.
 CONNECTORS-1438: Wrong content-type parse in Solr connector caused
 failure when content type contained a charset.
 (Kenta Kasahara, Karl Wright)
+
+CONNECTORS-1436: Porting of CMIS Output Connector from 2.6 to 2.8
+(Piergiorgio Lucidi)
 
 CONNECTORS-1434: Escape filenames in Solr Http headers to match spec.
 This is a workaround for a fix that really should be in HttpClient.

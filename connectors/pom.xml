@@ -20,13 +20,13 @@
   <parent>
     <groupId>org.apache.manifoldcf</groupId>
     <artifactId>mcf-parent</artifactId>
-    <version>2.10-SNAPSHOT</version>
+    <version>2.11-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.apache.manifoldcf</groupId>
   <artifactId>mcf-connectors</artifactId>
-  <version>2.10-SNAPSHOT</version>
+  <version>2.11-SNAPSHOT</version>
 
   <name>ManifoldCF - Connectors</name>
   <packaging>pom</packaging>
@@ -75,6 +75,7 @@
     <module>slack</module>
     <module>rocketchat</module>
     <module>mongodb</module>
+    <module>html-extractor</module>
   </modules>
 
 </project>
