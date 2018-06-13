@@ -743,11 +743,11 @@ public class MongodbOutputConnector extends BaseOutputConnector {
             //result.getLastError().get("err") == null
             Long numberOfDocumentsAfterInsert = mongoCollection.count();
             Long numberOfDocumentsInserted = numberOfDocumentsAfterInsert - numberOfDocumentsBeforeInsert;
-            Long numberOfDocumentsIndexed = (numberOfDocumentsInserted != 0)? numberOfDocumentsInserted : result.getN();
+            Long numberOfDocumentsIndexed = (numberOfDocumentsInserted != 0) ? numberOfDocumentsInserted : result.getN();
             Logging.connectors.info("Number of documents indexed : " + numberOfDocumentsIndexed);
 
             //check if a document is inserted or updated (numberOfDocumentsInserted > 0) || (result.getN() > 0)
-            if ( numberOfDocumentsIndexed > 0) {
+            if (numberOfDocumentsIndexed > 0) {
                 resultDescription = DOCUMENT_STATUS_ACCEPTED_DESC;
                 return DOCUMENT_STATUS_ACCEPTED;
             } else {
