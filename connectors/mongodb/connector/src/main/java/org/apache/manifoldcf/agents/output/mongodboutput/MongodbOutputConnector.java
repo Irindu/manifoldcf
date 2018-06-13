@@ -1,7 +1,6 @@
 package org.apache.manifoldcf.agents.output.mongodboutput;
 
 import com.mongodb.*;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.manifoldcf.agents.interfaces.IOutputAddActivity;
@@ -11,6 +10,7 @@ import org.apache.manifoldcf.agents.interfaces.ServiceInterruption;
 import org.apache.manifoldcf.agents.output.BaseOutputConnector;
 import org.apache.manifoldcf.core.interfaces.*;
 import org.apache.manifoldcf.crawler.system.Logging;
+import org.bson.types.Binary;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -703,7 +703,7 @@ public class MongodbOutputConnector extends BaseOutputConnector {
         try {
 
             byte[] bytes = IOUtils.toByteArray(inputStream);
-            String content = Base64.encodeBase64String(bytes);
+            Binary content = new Binary(bytes);
 
             DBCollection mongoCollection = mongoDatabase.getCollection(collection);
 
