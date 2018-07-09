@@ -870,6 +870,22 @@ curl -XGET http://localhost:9200/index/_mapping
                 </source>
             </section>
 
+            <section id="mongodboutputconnector">
+                <title>MongoDB Output Connection</title>
+                <p>The MongoDB Output Connection type allows you to store documents in a Mongodb instance.</p>
+                <p>By default each MongoDB Output Connection manages a single Mongodb collection, to work with multiple MongoDB collections(even if they exist in the same MongoDB instance),
+                    you need to create a specific connection for each MongoDB collection.</p>
+                <br/>
+                <p>A MongoDB Output connection has the following configuration parameters on the output connection editing screen:</p>
+                <br/><br/>
+                <figure src="images/en_US/mongodb-output-connection-configuration.png" alt="MongoDB Output Connection, configuration parameters" width="80%"/>
+                <br/><br/>
+                <p>Specify the Hostname and Port Number corresponding to the target MongoDB instance to reference the MongoDB server(mongod) and enter the correct username, password as the credentials.</p>
+                <p>Provide a Database name and a Collection name to uniquely specify where the documents are to be migrated.</p>
+                <p>Note that if the specified Database or the specified Collection does not exist in the target MongoDB instance those will be created automatically.</p>
+
+            </section>
+
             <section id="filesystemoutputconnector">
                 <title>File System Output Connection</title>
                 <p>The File System output connection type allows ManifoldCF to store documents in a local filesystem, using the conventions established by the
