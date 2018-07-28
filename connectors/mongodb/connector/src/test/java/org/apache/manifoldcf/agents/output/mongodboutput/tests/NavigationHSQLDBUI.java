@@ -57,9 +57,12 @@ public class NavigationHSQLDBUI extends BaseUIHSQLDB {
 
         // Parameters tab
         testerInstance.clickTab("Parameters");
-        testerInstance.setValue("serverlocation", "http://localhost:9200/");
-        testerInstance.setValue("username", "testUser");
-        testerInstance.setValue("password", "pass");
+        testerInstance.setValue("host", "localhost");
+        testerInstance.setValue("port", "27017");
+        testerInstance.setValue("username", "mongoadmin");
+        testerInstance.setValue("password", "secret");
+        testerInstance.setValue("database", "testDatabase");
+        testerInstance.setValue("collection", "testCollection");
 
         // Go back to the Name tab
         testerInstance.clickTab("Name");
@@ -107,6 +110,17 @@ public class NavigationHSQLDBUI extends BaseUIHSQLDB {
         testerInstance.selectValue("connectionname", "MyRepositoryConnection");
 
         testerInstance.clickButton("Continue");
+
+        // Visit all the tabs.  Scheduling tab first
+        testerInstance.clickTab("Scheduling");
+        testerInstance.selectValue("dayofweek", "0");
+        testerInstance.selectValue("hourofday", "1");
+        testerInstance.selectValue("minutesofhour", "30");
+        testerInstance.selectValue("monthofyear", "11");
+        testerInstance.selectValue("dayofmonth", "none");
+        testerInstance.setValue("duration", "120");
+        testerInstance.clickButton("Add Scheduled Time", true);
+        testerInstance.waitForElementWithName("editjob");
 
         // Save the job
         testerInstance.clickButton("Save");
