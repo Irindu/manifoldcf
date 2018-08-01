@@ -1,6 +1,18 @@
 package org.apache.manifoldcf.agents.output.mongodboutput;
 
-import com.mongodb.*;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCursor;
+import com.mongodb.DBCollection;
+import com.mongodb.MongoClient;
+import com.mongodb.DBTCPConnector;
+import com.mongodb.DBPort;
+import com.mongodb.DBPortPool;
+import com.mongodb.WriteConcern;
+import com.mongodb.WriteResult;
+import com.mongodb.MongoException;
+import org.bson.types.Binary;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.manifoldcf.agents.interfaces.IOutputAddActivity;
@@ -8,9 +20,14 @@ import org.apache.manifoldcf.agents.interfaces.IOutputRemoveActivity;
 import org.apache.manifoldcf.agents.interfaces.RepositoryDocument;
 import org.apache.manifoldcf.agents.interfaces.ServiceInterruption;
 import org.apache.manifoldcf.agents.output.BaseOutputConnector;
-import org.apache.manifoldcf.core.interfaces.*;
+import org.apache.manifoldcf.core.interfaces.IThreadContext;
+import org.apache.manifoldcf.core.interfaces.IHTTPOutput;
+import org.apache.manifoldcf.core.interfaces.IPasswordMapperActivity;
+import org.apache.manifoldcf.core.interfaces.IPostParameters;
+import org.apache.manifoldcf.core.interfaces.ConfigParams;
+import org.apache.manifoldcf.core.interfaces.VersionContext;
+import org.apache.manifoldcf.core.interfaces.ManifoldCFException;
 import org.apache.manifoldcf.crawler.system.Logging;
-import org.bson.types.Binary;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,7 +35,12 @@ import java.io.InterruptedIOException;
 import java.net.ConnectException;
 import java.net.UnknownHostException;
 import java.rmi.RemoteException;
-import java.util.*;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Date;
+import java.util.Iterator;
 
 public class MongodbOutputConnector extends BaseOutputConnector {
 
