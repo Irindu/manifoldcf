@@ -1,3 +1,19 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.manifoldcf.agents.output.mongodboutput;
 
 import com.mongodb.BasicDBObject;
@@ -42,13 +58,33 @@ import java.util.Locale;
 import java.util.Date;
 import java.util.Iterator;
 
+/**
+ * This is the "output connector" for MongoDB.
+ *
+ * @author Irindu Nugawela
+ */
+
 public class MongodbOutputConnector extends BaseOutputConnector {
 
     // Tab name properties
 
-    protected static final long timeToRelease = 300000L;
+    private static final String MONGODB_TAB_PARAMETERS = "MongodbConnector.Parameters";
 
     // Template names
+
+    /**
+     * Forward to the javascript to check the configuration parameters
+     */
+    private static final String EDIT_CONFIG_HEADER_FORWARD = "editConfiguration.js";
+    /**
+     * Server tab template
+     */
+    private static final String EDIT_CONFIG_FORWARD_SERVER = "editConfiguration_Parameters.html";
+    /**
+     * Forward to the HTML template to view the configuration parameters
+     */
+    private static final String VIEW_CONFIG_FORWARD = "viewConfiguration.html";
+
     /**
      * Save activity
      */
@@ -57,8 +93,6 @@ public class MongodbOutputConnector extends BaseOutputConnector {
      * Delete activity
      */
     protected final static String ACTIVITY_DELETE = "Delete";
-
-    private static final String MONGODB_PROPERTY_PREFIX = "mongodb:";
 
     /**
      * Document accepted
@@ -84,27 +118,40 @@ public class MongodbOutputConnector extends BaseOutputConnector {
      */
     private final static String DOCUMENT_DELETION_STATUS_REJECTED = "Remove request rejected";
 
-    private static final String MONGODB_TAB_PARAMETERS = "MongodbConnector.Parameters";
-    /**
-     * Forward to the javascript to check the configuration parameters
-     */
-    private static final String EDIT_CONFIG_HEADER_FORWARD = "editConfiguration.js";
-    /**
-     * Server tab template
-     */
-    private static final String EDIT_CONFIG_FORWARD_SERVER = "editConfiguration_Parameters.html";
-    /**
-     * Forward to the HTML template to view the configuration parameters
-     */
-    private static final String VIEW_CONFIG_FORWARD = "viewConfiguration.html";
+    /** Location of host where MongoDB server is hosted*/
+    protected String host = null;
+
+    /** port number associated with MongoDB server process */
+    protected String port = null;
+
+    /** Name of the target database */
+    protected String database = null;
+
+    /** Name of the target collection that belongs to the database specified above */
+    protected String collection = null;
+
+    /** username and password associated with the target database */
     protected String username = null;
     protected String password = null;
-    protected String host = null;
-    protected String port = null;
-    protected String database = null;
-    protected String collection = null;
+
+    /**
+     * Session expiration time in milliseconds.
+     */
+    protected static final long timeToRelease = 300000L;
+
+    /**
+     * Last session fetch time.
+     */
     protected long lastSessionFetch = -1L;
+
+    /**
+     * MongoDB client instance used to make the connection to the MongoDB server
+     */
     private MongoClient client = null;
+
+    /**
+     * MongoDB database handle instance
+     */
     private DB mongoDatabase = null;
 
 
@@ -161,7 +208,7 @@ public class MongodbOutputConnector extends BaseOutputConnector {
                 client = null;
                 lastSessionFetch = -1L;
                 // Treat this as a transient problem
-                Logging.connectors.warn("Mongodb: Transient remote exception closing session: " + e.getMessage(), e);
+                Logging.connectors.warn("MongoDB: Transient remote exception closing session: " + e.getMessage(), e);
             }
 
         }
@@ -181,19 +228,6 @@ public class MongodbOutputConnector extends BaseOutputConnector {
         DBTCPConnector currentTCPConnection = client.getConnector();
         return currentTCPConnection.isOpen();
     }
-
-    /**
-     * View configuration. This method is called in the body section of the
-     * connector's view configuration page. Its purpose is to present the
-     * connection information to the user. The coder can presume that the HTML
-     * that is output from this configuration will be within appropriate
-     * <html> and <body> tags.
-     *
-     * @param threadContext is the local thread context.
-     * @param out           is the output to which any HTML should be sent.
-     * @param parameters    are the configuration parameters, as they currently exist, for
-     *                      this connection being configured.
-     */
 
     /**
      * Read the content of a resource, replace the variable ${PARAMNAME} with the
@@ -247,6 +281,18 @@ public class MongodbOutputConnector extends BaseOutputConnector {
         newMap.put(MongodbOutputConfig.COLLECTION_PARAM, collection);
     }
 
+    /**
+     * View configuration. This method is called in the body section of the
+     * connector's view configuration page. Its purpose is to present the
+     * connection information to the user. The coder can presume that the HTML
+     * that is output from this configuration will be within appropriate
+     * <html> and <body> tags.
+     *
+     * @param threadContext is the local thread context.
+     * @param out           is the output to which any HTML should be sent.
+     * @param parameters    are the configuration parameters, as they currently exist, for
+     *                      this connection being configured.
+     */
     @Override
     public void viewConfiguration(IThreadContext threadContext, IHTTPOutput out, Locale locale, ConfigParams parameters)
             throws ManifoldCFException, IOException {
@@ -388,7 +434,7 @@ public class MongodbOutputConnector extends BaseOutputConnector {
                 mongoDatabase = null;
                 lastSessionFetch = -1L;
                 // Treat this as a transient problem
-                Logging.connectors.warn("Mongodb: Transient remote exception closing session: " + e.getMessage(), e);
+                Logging.connectors.warn("MongoDB: Transient remote exception closing session: " + e.getMessage(), e);
             }
 
         }
@@ -403,11 +449,10 @@ public class MongodbOutputConnector extends BaseOutputConnector {
     }
 
     /**
-     * This method create a new Mongodb Client for a Mongodb repository,
+     * This method creates a new MongoDB Session for a MongoDB repository,
      *
      * @param configParams is the set of configuration parameters, which in this case
-     *                     describe the target appliance, basic auth configuration, etc.
-     *                     (This formerly came out of the ini file.)
+     *                     describe the target, basic auth configuration, etc.
      */
     @Override
     public void connect(ConfigParams configParams) {
@@ -459,13 +504,13 @@ public class MongodbOutputConnector extends BaseOutputConnector {
             Throwable thr = t.getException();
             if (thr != null) {
                 if (thr instanceof ManifoldCFException)
-                    throw new ManifoldCFException("Mongodb: Error during getting a new session: " + thr.getMessage(), thr);
+                    throw new ManifoldCFException("MongoDB: Error during getting a new session: " + thr.getMessage(), thr);
                 else if (thr instanceof RemoteException)
                     throw (RemoteException) thr;
                 else if (thr instanceof MongoException)
-                    throw new ManifoldCFException("Mongodb: Error during getting a new session: " + thr.getMessage(), thr);
+                    throw new ManifoldCFException("MongoDB: Error during getting a new session: " + thr.getMessage(), thr);
                 else if (thr instanceof java.net.ConnectException)
-                    throw new ManifoldCFException("Mongodb: Error Connecting Mongod is mongod running? : " + thr.getMessage(), thr);
+                    throw new ManifoldCFException("MongoDB: Error Connecting to MongoDB is mongod running? : " + thr.getMessage(), thr);
                 else
                     throw (Error) thr;
             }
@@ -477,7 +522,7 @@ public class MongodbOutputConnector extends BaseOutputConnector {
             if (e2 instanceof InterruptedException || e2 instanceof InterruptedIOException)
                 throw new ManifoldCFException(e2.getMessage(), e2, ManifoldCFException.INTERRUPTED);
             // Treat this as a transient problem
-            Logging.connectors.warn("Mogodb: Transient remote exception creating session: " + e.getMessage(), e);
+            Logging.connectors.warn("MongoDB: Transient remote exception creating session: " + e.getMessage(), e);
             currentTime = System.currentTimeMillis();
             throw new ServiceInterruption(e.getMessage(), currentTime + 60000L);
         }
@@ -517,7 +562,7 @@ public class MongodbOutputConnector extends BaseOutputConnector {
                 client = null;
                 lastSessionFetch = -1L;
                 // Treat this as a transient problem
-                Logging.connectors.warn("Mongodb: Transient remote exception closing session: " + e.getMessage(), e);
+                Logging.connectors.warn("MongoDB: Transient remote exception closing session: " + e.getMessage(), e);
             }
 
         }
@@ -537,9 +582,9 @@ public class MongodbOutputConnector extends BaseOutputConnector {
                     if (thr instanceof RemoteException)
                         throw (RemoteException) thr;
                     else if (thr instanceof ConnectException)
-                        throw new ManifoldCFException("Mongodb: Error during checking connection: is Mongod running?" + thr.getMessage(), thr);
+                        throw new ManifoldCFException("MongoDB: Error during checking connection: is Mongod running?" + thr.getMessage(), thr);
                     else if (thr instanceof MongoException)
-                        throw new ManifoldCFException("Mongodb: Error during checking connection: " + thr.getMessage(), thr);
+                        throw new ManifoldCFException("MongoDB: Error during checking connection: " + thr.getMessage(), thr);
                     else if (thr instanceof ManifoldCFException)
                         throw new ManifoldCFException(thr.getMessage(), thr);
                     else
@@ -582,14 +627,14 @@ public class MongodbOutputConnector extends BaseOutputConnector {
                             client = new MongoClient();
                             mongoDatabase = client.getDB(database);
                         } catch (UnknownHostException ex) {
-                            throw new ManifoldCFException("Mongodb: Default host is not found. Is mongod process running?" + ex.getMessage(), ex);
+                            throw new ManifoldCFException("MongoDB: Default host is not found. Is mongod process running?" + ex.getMessage(), ex);
                         }
                     } else if (!StringUtils.isEmpty(host) && StringUtils.isEmpty(port)) {
                         try {
                             client = new MongoClient(host);
                             mongoDatabase = client.getDB(database);
                         } catch (UnknownHostException ex) {
-                            throw new ManifoldCFException("Mongodb: Given host information is not valid or mongod process doesn't run" + ex.getMessage(), ex);
+                            throw new ManifoldCFException("MongoDB: Given host information is not valid or mongod process doesn't run" + ex.getMessage(), ex);
                         }
                     } else if (!StringUtils.isEmpty(host) && !StringUtils.isEmpty(port)) {
                         try {
@@ -597,32 +642,32 @@ public class MongodbOutputConnector extends BaseOutputConnector {
                             client = new MongoClient(host, integerPort);
                             mongoDatabase = client.getDB(database);
                         } catch (UnknownHostException ex) {
-                            throw new ManifoldCFException("Mongodb: Given information is not valid or mongod process doesn't run" + ex.getMessage(), ex);
+                            throw new ManifoldCFException("MongoDB: Given information is not valid or mongod process doesn't run" + ex.getMessage(), ex);
                         } catch (NumberFormatException ex) {
-                            throw new ManifoldCFException("Mongodb: Given port is not valid number. " + ex.getMessage(), ex);
+                            throw new ManifoldCFException("MongoDB: Given port is not a valid number. " + ex.getMessage(), ex);
                         }
                     } else if (StringUtils.isEmpty(host) && !StringUtils.isEmpty(port)) {
                         try {
                             int integerPort = Integer.parseInt(port);
-                            client = new MongoClient(host, integerPort);
+                            client = new MongoClient("localhost", integerPort);
                             mongoDatabase = client.getDB(database);
                         } catch (UnknownHostException e) {
-                            Logging.connectors.warn("Mongodb: Given information is not valid or mongod process doesn't run" + e.getMessage(), e);
-                            throw new ManifoldCFException("Mongodb: Given information is not valid or mongod process doesn't run" + e.getMessage(), e);
+                            Logging.connectors.warn("MongoDB: Given information is not valid or mongod process doesn't run" + e.getMessage(), e);
+                            throw new ManifoldCFException("MongoDB: Given information is not valid or mongod process doesn't run" + e.getMessage(), e);
                         } catch (NumberFormatException e) {
-                            Logging.connectors.warn("Mongodb: Given port is not valid number. " + e.getMessage(), e);
-                            throw new ManifoldCFException("Mongodb: Given port is not valid number. " + e.getMessage(), e);
+                            Logging.connectors.warn("MongoDB: Given port is not valid number. " + e.getMessage(), e);
+                            throw new ManifoldCFException("MongoDB: Given port is not valid number. " + e.getMessage(), e);
                         }
                     }
                     if (!StringUtils.isEmpty(username) && !StringUtils.isEmpty(password)) {
                         boolean auth = mongoDatabase.authenticate(username, password.toCharArray());
                         if (!auth) {
-                            Logging.connectors.warn("Mongodb:Authentication Error! Given database username and password doesn't match.");
-                            throw new ManifoldCFException("Mongodb: Given database username and password doesn't match.");
+                            Logging.connectors.warn("MongoDB:Authentication Error! Given database username and password doesn't match for the database given.");
+                            throw new ManifoldCFException("MongoDB: Given database username and password doesn't match for the database given.");
                         } else {
                             if (Logging.connectors.isDebugEnabled()) {
-                                Logging.connectors.debug("Mongodb: Username = '" + username + "'");
-                                Logging.connectors.debug("Mongodb: Password exists");
+                                Logging.connectors.debug("MongoDB: Username = '" + username + "'");
+                                Logging.connectors.debug("MongoDB: Password exists");
                             }
                         }
                     }
@@ -657,7 +702,7 @@ public class MongodbOutputConnector extends BaseOutputConnector {
                 }
 
             } catch (Throwable e) {
-                Logging.connectors.warn("Mongodb: Error checking repository: " + e.getMessage(), e);
+                Logging.connectors.warn("MongoDB: Error checking repository: " + e.getMessage(), e);
                 this.exception = e;
             }
         }
@@ -763,6 +808,7 @@ public class MongodbOutputConnector extends BaseOutputConnector {
                 result = mongoCollection.insert(newDocument);
             }
             //result.getLastError().get("err") == null
+            //To get the number of documents indexed i.e. tne number of documents inserted or updated
             Long numberOfDocumentsAfterInsert = mongoCollection.count();
             Long numberOfDocumentsInserted = numberOfDocumentsAfterInsert - numberOfDocumentsBeforeInsert;
             Long numberOfDocumentsIndexed = (numberOfDocumentsInserted != 0) ? numberOfDocumentsInserted : result.getN();
@@ -779,7 +825,7 @@ public class MongodbOutputConnector extends BaseOutputConnector {
 
         } catch (MongoException e) {
             resultDescription = DOCUMENT_STATUS_REJECTED_DESC;
-            Logging.connectors.info("Mongodb: Error inserting or updating : " + e.getMessage());
+            Logging.connectors.info("MongoDB: Error inserting or updating : " + e.getMessage());
             throw new ManifoldCFException(e.getMessage(), e);
         } catch (IOException e) {
             resultDescription = DOCUMENT_STATUS_REJECTED_DESC;
